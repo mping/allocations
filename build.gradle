@@ -1,0 +1,15 @@
+apply plugin: 'java'
+apply plugin: 'idea'
+
+sourceCompatibility = '1.8'
+targetCompatibility = '1.8'
+
+repositories {
+    mavenCentral()
+}
+
+dependencies {
+    compile 'com.google.guava:guava:25.1-jre'
+    testCompile 'junit:junit:4.+'
+}
+
