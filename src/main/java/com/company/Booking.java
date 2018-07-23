@@ -15,9 +15,12 @@ class Booking implements Comparable<Booking> {
     }
 
     boolean intersects(Booking other) {
-        return (start <= other.start && other.start <= end) || (start <= other.end && other.end <= end);
+        return intersects(other.start) || intersects(other.end);
     }
 
+    public boolean intersects(int day) {
+        return start <= day && day <= end;
+    }
 
     @Override
     public int compareTo(Booking o) {
@@ -38,4 +41,5 @@ class Booking implements Comparable<Booking> {
     public String toString() {
         return String.format("[%d,%d]", start, end);
     }
+
 }

@@ -5,6 +5,8 @@ import com.google.common.collect.Collections2;
 import com.google.common.collect.Sets;
 
 import java.util.*;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 class BookingSheet {
     int min = 0;
@@ -45,6 +47,44 @@ class BookingSheet {
     void add(Fleet f) {
         assert !allocated.containsKey(f);
         allocated.put(f, new TreeSet<>());
+    }
+
+    long totalAllocations(int day) {
+        List<Booking> all = allocated
+                .values()
+                .stream()
+                .flatMap(ss -> new ArrayList<>(ss).stream())
+                .collect(Collectors.toList());
+
+        return all.stream().filter(b -> b.intersects(day)).count();
+    }
+
+    public boolean canAccept(Booking booking) {
+       return IntStream
+                .range(booking.start, booking.end)
+                .mapToLong(i -> totalAllocations(i))
+                .allMatch( i -> i <= allocated.keySet().size());
+    }
+
+
+    public void accept(Booking booking) {
+        if(canAccept(booking)) {
+
+            //TODO run algorithm
+            let B = intersection(bookings, tentative.day_0)
+            let F = fleets(B)
+            let f_initial = F.where( is_free(tentative.day_0)).first
+
+            for (d in tentative[day_1..days])
+                let f_free = F.where( is_free(tentative.day_d)).first
+                swap_bookings_from(d, f_initial, f_free)
+
+
+            booking will be in f_initial
+
+        } else {
+            unallocated.add(booking);
+        }
     }
 
     boolean equivalent(BookingSheet other) {
@@ -110,16 +150,20 @@ class BookingSheet {
     }
 
     //TODO convert to lazy iterator
-    static Collection<Possibility> orderedPermutations  (Collection<Fleet> fleets, Collection<Booking> bookings) {
+    static Collection<Possibility> orderedPermutations  (List<Fleet> fleets, List<Booking> bookings) {
         Collection<Possibility> res = new ArrayList<>();
 
-        for (List<Fleet> fleetPerms : Collections2.orderedPermutations(fleets)) {
+/*        for (List<Fleet> fleetPerms : Collections2.orderedPermutations(fleets)) {
             for (List<Booking> bookingPerms : Collections2.orderedPermutations(bookings)) {
                 res.add(new Possibility(fleetPerms, bookingPerms));
             }
+        }*/
+        for (List<Booking> bookingPerms : Collections2.orderedPermutations(bookings)) {
+            res.add(new Possibility(fleets, bookingPerms));
         }
         return res;
     }
+
 
     static class Possibility {
         final List<Fleet> fleets;
