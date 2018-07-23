@@ -15,9 +15,12 @@ public class ConsolePrinter {
     public static final String ANSI_BLUE = "\u001B[34m";
     public static final String ANSI_PURPLE = "\u001B[35m";
     public static final String ANSI_CYAN = "\u001B[36m";
-    public static int nextColor = 0;
 
-    private final Map<Booking, String> known = new HashMap<>();
+    public static int nextColor = 0;
+    public static int nextLabel = 0;
+
+    private final Map<Booking, String> bookingColors = new HashMap<>();
+    private final Map<Booking, String> bookingLabels = new HashMap<>();
 
     ConsolePrinter() {
     }
@@ -50,10 +53,6 @@ public class ConsolePrinter {
             System.out.println("");
         }
 
-        System.out.print("Unallocated:");
-        for (Booking u : bs.unallocated) {
-            System.out.printf("%s, ", u);
-        }
         System.out.println("\n---\n");
     }
 
@@ -62,18 +61,28 @@ public class ConsolePrinter {
         String reset = ANSI_RESET;
 
         IntStream.range(0, b.size).forEach(i -> {
-            String ch = i == 0 ? " <" : (i == b.size - 1) ? "|>" : "|=";
+            //String ch = i == 0 ? " <" : (i == b.size - 1) ? "|>" : "|=";
+            String ch = i == 0 ? " <" : (i == b.size - 1) ? nextLabel(b)+">" : "|=";
             System.out.print(color + ch + reset);
         });
     }
 
 
     String nextColor(Booking b) {
-        return known.computeIfAbsent(b, booking -> rotateColor());
+        return bookingColors.computeIfAbsent(b, booking -> rotateColor());
+    }
+
+    String nextLabel(Booking b) {
+        return bookingLabels.computeIfAbsent(b, booking -> rotateLabel());
     }
 
     String rotateColor() {
         String[] colors = new String[]{ANSI_BLACK, ANSI_BLUE, ANSI_CYAN, ANSI_GREEN, ANSI_PURPLE, ANSI_YELLOW, ANSI_RED};
         return colors[nextColor++ % colors.length];
+    }
+
+    String rotateLabel() {
+        char[] labels = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ".toCharArray();
+        return Character.toString(labels[nextLabel++ % labels.length]);
     }
 }

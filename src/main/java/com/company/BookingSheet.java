@@ -10,7 +10,6 @@ class BookingSheet {
     int min = 0;
     int max = 0;
 
-    SortedSet<Booking> unallocated = new TreeSet<>();
     Map<Fleet, SortedSet<Booking>> allocated = new TreeMap<>();
 
     boolean hasBookingConflict(Fleet f, Booking b) {
@@ -66,24 +65,28 @@ class BookingSheet {
     }
 
 
-    public void xchg(Fleet src, Fleet dst, int day) {
+    public List<Swap> xchg(Fleet src, Fleet dst, int day) {
         Preconditions.checkArgument(allocated.containsKey(src));
         Preconditions.checkArgument(allocated.containsKey(dst));
 
-        List<Booking> toGo = new ArrayList<>();
-        List<Booking> toRcv = new ArrayList<>();
+        List<Swap> swaps = new ArrayList<>();
+        List<Booking> src2Dst = new ArrayList<>();
+        List<Booking> dstToSrc = new ArrayList<>();
 
         Iterator<Booking> srcBookings = allocated.get(src).iterator();
         Iterator<Booking> dstBookings = allocated.get(dst).iterator();
 
+        //compute bookings to remove
         while (srcBookings.hasNext()) {
             Booking b = srcBookings.next();
             if (b.start <= day && day <= b.end) {
                 throw new IllegalArgumentException("src contains a booking with specified day: " + b);
             }
+            //unassign all bookings after 'day' from src, we'll put them in dst
             if (day < b.start) {
-                toGo.add(b);
+                src2Dst.add(b);
                 srcBookings.remove();
+                swaps.add(new Swap(b, src, dst));
             }
         }
 
@@ -92,17 +95,23 @@ class BookingSheet {
             if (b.start < day && day <= b.end) {
                 throw new IllegalArgumentException("dst contains a booking with specified day: " + b);
             }
+            //unassign all bookings starting after 'day' from dst, we'll put them in src
             if (day <= b.start) {
-                toRcv.add(b);
+                dstToSrc.add(b);
                 dstBookings.remove();
+                swaps.add(new Swap(b, dst, src));
             }
         }
 
-        allocate(src, toRcv);
-        allocate(dst, toGo);
+        allocate(src, dstToSrc);
+        allocate(dst, src2Dst);
+
+        return swaps;
     }
 
-    public boolean accept(Booking booking) {
+    public Rearrangement accept(Booking booking) {
+        Rearrangement rr = new Rearrangement();
+
         if (canAccept(booking)) {
             Set<Fleet> fleets = allocated.keySet();
 
@@ -110,14 +119,36 @@ class BookingSheet {
             for (int i = booking.start + 1; i <= booking.end; i++) {
                 int next = i;
                 Fleet freeOnNextDay = fleets.stream().filter(f -> !hasBookingOnDay(f, next)).findFirst().get();
-                xchg(freeOnNextDay, src, next);
+                List<Swap> swapped = xchg(freeOnNextDay, src, next);
+                rr.swaps.addAll(swapped);
             }
 
+            //now we can add booking to src
             allocate(src, booking);
-            return true;
+            rr.rearranged = true;
+            //return true;
         } else {
-            unallocated.add(booking);
-            return false;
+            rr.rearranged = false;
+            //return false;
+        }
+
+        return rr;
+    }
+
+    static final class Rearrangement {
+        boolean rearranged = false;
+        List<Swap> swaps = new ArrayList<>();
+    }
+
+    static final class Swap {
+        final Booking booking;
+        final Fleet old;
+        final Fleet now;
+
+        Swap(Booking b, Fleet old, Fleet now) {
+            this.booking = b;
+            this.old = old;
+            this.now = now;
         }
     }
 
