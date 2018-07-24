@@ -2,6 +2,7 @@ package com.company;
 
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Lists;
 
 import java.util.*;
 import java.util.stream.IntStream;
@@ -14,14 +15,14 @@ class BookingSheet {
 
     boolean hasBookingConflict(Fleet f, Booking b) {
         return allocated
-                .getOrDefault(f, Collections.emptySortedSet())
+                .get(f)
                 .stream()
                 .anyMatch(e -> e.intersects(b));
     }
 
     boolean hasBookingOnDay(Fleet f, int day) {
         return allocated
-                .getOrDefault(f, Collections.emptySortedSet())
+                .get(f)
                 .stream()
                 .anyMatch(e -> e.intersects(day));
     }
@@ -51,7 +52,7 @@ class BookingSheet {
         return allocated
                 .values()
                 .stream()
-                .flatMap(ss -> new ArrayList<>(ss).stream())
+                .flatMap(Collection::stream)
                 .filter(b -> b.intersects(day))
                 .count();
     }
@@ -60,7 +61,7 @@ class BookingSheet {
         //if max of overlaps <= num of fleets, we can accept the booking
         return IntStream
                 .rangeClosed(booking.start, booking.end)
-                .mapToLong(i -> totalAllocations(i))
+                .mapToLong(this::totalAllocations)
                 .allMatch(i -> i < allocated.keySet().size());
     }
 
@@ -68,6 +69,10 @@ class BookingSheet {
     public List<Swap> xchg(Fleet src, Fleet dst, int day) {
         Preconditions.checkArgument(allocated.containsKey(src));
         Preconditions.checkArgument(allocated.containsKey(dst));
+
+        if(src == dst) {
+            return Collections.emptyList();
+        }
 
         List<Swap> swaps = new ArrayList<>();
         List<Booking> src2Dst = new ArrayList<>();
